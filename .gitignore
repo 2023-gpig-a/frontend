@@ -1,0 +1,14 @@
+# Packages
+node_modules/
+
+# Build artifacts
+dist/
+
+# Yarn stuff
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
