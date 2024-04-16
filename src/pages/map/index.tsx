@@ -1,6 +1,6 @@
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { DroneManagerAPI, DroneStatus, MockDroneAPI } from "../../api/drones";
+import { DroneManager, DroneManagerAPI, DroneStatus, MockDroneAPI } from "../../api/drones";
 import { useQuery } from "@tanstack/react-query";
 import L from "leaflet";
 import dayjs from "dayjs";
@@ -9,7 +9,7 @@ import { Ref, useRef } from "react";
 dayjs.extend(relativeTime);
 
 // TODO replace this with a real implementation
-const Drones: DroneManagerAPI = MockDroneAPI;
+const Drones: DroneManagerAPI = import.meta.env.VITE_USE_MOCK_DRONEMANAGER === "true" ? MockDroneAPI : DroneManager;
 
 const droneStatusToColor: Record<"idle" | "flying" | "unknown", string> = {
   idle: "green",
