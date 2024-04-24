@@ -1,5 +1,6 @@
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { BrowserRouter as Router, Route, Link, Routes } from "react-router-dom";
 import { DroneManagerAPI, DroneStatus, MockDroneAPI } from "../../api/drones";
 import { useQuery } from "@tanstack/react-query";
 import L from "leaflet";
@@ -104,6 +105,11 @@ export default function MapPage() {
       <div>
         <DroneMap drones={droneStatuses.data || []} mapRef={mapRef} />
       </div>
+      <Link to="/data">
+      <button className="bg-green-500 text-white p-1 rounded">
+      View Data
+      </button>
+      </Link>
     </div>
   );
 }

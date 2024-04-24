@@ -4,10 +4,14 @@ import "./index.css";
 import './App.css'
 import MapPage from './pages/map';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import DataPage from './pages/data';
 
 const router = createBrowserRouter([{
     path: "/",
     element: <MapPage />,
+  },{
+    path: "/data",
+    element: <DataPage />,
   }
 ]);
 
