@@ -8,7 +8,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { Ref, useRef } from "react";
 dayjs.extend(relativeTime);
 
-// TODO replace this with a real implementation
 const Drones: DroneManagerAPI = import.meta.env.VITE_USE_MOCK_DRONEMANAGER === "true" ? MockDroneAPI : DroneManager;
 
 const droneStatusToColor: Record<"idle" | "flying" | "unknown", string> = {
