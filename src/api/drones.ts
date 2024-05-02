@@ -12,6 +12,13 @@ export interface DroneManagerAPI {
   getDroneStatus(): Promise<DroneStatus[]>;
 }
 
+export const DroneManager: DroneManagerAPI = {
+  getDroneStatus: async () => {
+    const response = await fetch(import.meta.env.VITE_DRONEMANAGER_ENDPOINT + "/get_drone_status");
+    return response.json();
+  },
+}
+
 export const MockDroneAPI: DroneManagerAPI = {
   getDroneStatus: async () => {
     const center = [54.39, -0.937];
