@@ -57,7 +57,7 @@ function stringToColour(str: string){
     return colour
 }
 //add year to form
-export default function DataPage(this: any) {
+export default function DataPage() {
     const [myLocation, setMyLocation] = useState("York");
 
   const handleChange = (event: { target: { value: SetStateAction<string>; }; }) => {
@@ -77,9 +77,12 @@ export default function DataPage(this: any) {
                 <option value="London">London</option>
             </select>
             </form>
+            <div >
+            <h2 className="grid grid-cols-2 gap-1">Plant Status Over Time</h2>
             <ResponsiveContainer width={"50%"} height={500} >
                 <LineChart 
                 data={chartData}
+                
                 margin={{
                     top: 5,
                     right: 30,
@@ -103,6 +106,8 @@ export default function DataPage(this: any) {
                 
                 </LineChart>
             </ResponsiveContainer>
+            </div>
+            
         </div>
     )
     
