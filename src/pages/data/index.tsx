@@ -1,21 +1,17 @@
 import { SetStateAction, useState } from "react";
 import { DmasAPI, DmasData, MockDmasAPI } from "../../api/dmas";
 import { useQuery } from "@tanstack/react-query";
-import { Label, BarChart,LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Bar, Rectangle } from 'recharts';
-import { forEachChild } from "typescript";
+import { Label,LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
 
 
 // TODO replace this with a real implementation
 const Plants: DmasAPI = MockDmasAPI;
 
-function formatData(){
-    const dataArray = useQuery({
-        queryFn: Plants.getDmasData,
-        queryKey: ["species"],
-    });
+function formatData(dataArray:DmasData[] | undefined){
     const plantTotalsByYear = new Map<number, Record<string, number>>();
-    if (dataArray.data != undefined){
-        for(const x of dataArray.data){
+    if (dataArray != undefined){
+        for(const x of dataArray){
             for(const y of x.plantGrowth) {
                 const year = y.date.getFullYear();
                 if (!plantTotalsByYear.has(year)) {
@@ -31,20 +27,16 @@ function formatData(){
     return plantTotalsArray   
     }
 
-function returnAllSpecies() {
+function returnAllSpecies(returnData:DmasData[] | undefined) {
     const allSpecies = [];
-    const returnData = useQuery({
-        queryFn: Plants.getDmasData,
-        queryKey: ["species"],
-      })
-      if(returnData.data != undefined){
-        for (const x of returnData.data) {
+      if(returnData != undefined){
+        for (const x of returnData) {
             allSpecies.push(x.species)
           }
       }
       return allSpecies;
 }
-function stringToColour(str: string){
+function stringToColour(str: string){ // convert string to hex code
     let hash = 0;
     str.split('').forEach(char => {
       hash = char.charCodeAt(0) + ((hash << 5) - hash)
@@ -58,14 +50,19 @@ function stringToColour(str: string){
 }
 //add year to form
 export default function DataPage() {
+    const returnData = useQuery({
+            queryFn: Plants.getDmasData,
+            queryKey: ["species"],
+          })
+
     const [myLocation, setMyLocation] = useState("York");
 
   const handleChange = (event: { target: { value: SetStateAction<string>; }; }) => {
     setMyLocation(event.target.value)
   }
   
-  const chartData = formatData();
-  const allSpecies = returnAllSpecies();
+  const chartData = formatData(returnData.data);
+  const allSpecies = returnAllSpecies(returnData.data);
   
     return (
         <div>
@@ -103,11 +100,9 @@ export default function DataPage() {
                 allSpecies.map((x) => (
                     <Line type="monotone" dataKey={x} stroke={stringToColour(x)} />
                 ))}
-                
                 </LineChart>
             </ResponsiveContainer>
             </div>
-            
         </div>
     )
     
