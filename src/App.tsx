@@ -1,21 +1,23 @@
-import { StrictMode } from 'react'
+import { StrictMode } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
-import './App.css'
-import MapPage from './pages/map';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import DataPage from './pages/data';
+import "./App.css";
+import MapPage from "./pages/map";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import DataPage from "./pages/data";
 
-const router = createBrowserRouter([{
+const router = createBrowserRouter([
+  {
     path: "/",
     element: <MapPage />,
-  },{
+  },
+  {
     path: "/data",
     element: <DataPage />,
-  }
+  },
 ]);
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient();
 
 function App() {
   return (
@@ -26,7 +28,7 @@ function App() {
         </QueryClientProvider>
       </StrictMode>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,7 +1,12 @@
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { Link} from "react-router-dom";
-import { DroneManager, DroneManagerAPI, DroneStatus, MockDroneAPI } from "../../api/drones";
+import { Link } from "react-router-dom";
+import {
+  DroneManager,
+  DroneManagerAPI,
+  DroneStatus,
+  MockDroneAPI,
+} from "../../api/drones";
 import { useQuery } from "@tanstack/react-query";
 import L from "leaflet";
 import dayjs from "dayjs";
@@ -9,7 +14,10 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { Ref, useRef } from "react";
 dayjs.extend(relativeTime);
 
-const Drones: DroneManagerAPI = import.meta.env.VITE_USE_MOCK_DRONEMANAGER === "true" ? MockDroneAPI : DroneManager;
+const Drones: DroneManagerAPI =
+  import.meta.env.VITE_USE_MOCK_DRONEMANAGER === "true"
+    ? MockDroneAPI
+    : DroneManager;
 
 const droneStatusToColor: Record<"idle" | "flying" | "unknown", string> = {
   idle: "green",
@@ -88,7 +96,9 @@ export default function MapPage() {
           <ul className="space-y-1">
             {droneStatuses.data?.map((drone) => (
               <li key={drone.id} className="block p-2 shadow-sm">
-                <div>{drone.id} - {drone.status}</div>
+                <div>
+                  {drone.id} - {drone.status}
+                </div>
                 <div>Last seen {dayjs(drone.lastUpdate).fromNow()}</div>
                 <button
                   className="bg-blue-500 text-white p-1 rounded inline-block"
@@ -105,9 +115,9 @@ export default function MapPage() {
         <DroneMap drones={droneStatuses.data || []} mapRef={mapRef} />
       </div>
       <Link to="/data">
-      <button className="bg-green-500 text-white p-1 rounded">
-      View Data
-      </button>
+        <button className="bg-green-500 text-white p-1 rounded">
+          View Data
+        </button>
       </Link>
     </div>
   );

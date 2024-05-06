@@ -14,10 +14,12 @@ export interface DroneManagerAPI {
 
 export const DroneManager: DroneManagerAPI = {
   getDroneStatus: async () => {
-    const response = await fetch(import.meta.env.VITE_DRONEMANAGER_ENDPOINT + "/get_drone_status");
+    const response = await fetch(
+      import.meta.env.VITE_DRONEMANAGER_ENDPOINT + "/get_drone_status",
+    );
     return response.json();
   },
-}
+};
 
 export const MockDroneAPI: DroneManagerAPI = {
   getDroneStatus: async () => {
@@ -35,21 +37,30 @@ export const MockDroneAPI: DroneManagerAPI = {
         status: "flying",
         battery: 87,
         lastUpdate: new Date(),
-        lastSeen: [center[0] + Math.random() * 0.05, center[1] + Math.random() * 0.05],
+        lastSeen: [
+          center[0] + Math.random() * 0.05,
+          center[1] + Math.random() * 0.05,
+        ],
       },
       {
         id: "3",
         status: "flying",
         battery: 87,
         lastUpdate: new Date(),
-        lastSeen: [center[0] + Math.random() * 0.05, center[1] + Math.random() * 0.05],
+        lastSeen: [
+          center[0] + Math.random() * 0.05,
+          center[1] + Math.random() * 0.05,
+        ],
       },
       {
         id: "4",
         status: "flying",
         battery: 87,
         lastUpdate: new Date(),
-        lastSeen: [center[0] + Math.random() * 0.05, center[1] + Math.random() * 0.05],
+        lastSeen: [
+          center[0] + Math.random() * 0.05,
+          center[1] + Math.random() * 0.05,
+        ],
       },
       {
         id: "5",
