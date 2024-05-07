@@ -13,7 +13,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// TODO replace this with a real implementation
 const Plants: DmasAPI = 
     import.meta.env.VITE_USE_MOCK_DMAS === "true"
         ? MockDmasAPI
