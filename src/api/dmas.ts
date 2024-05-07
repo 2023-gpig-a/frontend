@@ -17,6 +17,15 @@ export interface DmasAPI {
   getDmasData(): Promise<DmasData[]>;
 }
 
+export const Dmas: DmasAPI = {
+  getDmasData: async () => {
+    const response = await fetch(
+      import.meta.env.VITE_DMAS_ENDPOINT + "/track_growth",
+    );
+    return response.json();
+  },
+};
+
 export const MockDmasAPI: DmasAPI = {
   getDmasData: async () => {
     return [

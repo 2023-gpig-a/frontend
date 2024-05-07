@@ -1,5 +1,5 @@
 import { SetStateAction, useState } from "react";
-import { DmasAPI, DmasData, MockDmasAPI } from "../../api/dmas";
+import { Dmas, DmasAPI, DmasData, MockDmasAPI } from "../../api/dmas";
 import { useQuery } from "@tanstack/react-query";
 import {
   Label,
@@ -13,12 +13,14 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// TODO replace this with a real implementation
-const Plants: DmasAPI = MockDmasAPI;
+const Plants: DmasAPI = 
+    import.meta.env.VITE_USE_MOCK_DMAS === "true"
+        ? MockDmasAPI
+        : Dmas;
 
 function formatData(dataArray: DmasData[] | undefined) {
   const plantTotalsByYear = new Map<number, Record<string, number>>();
-  if (dataArray != undefined) {
+  if (Array.isArray(dataArray)) {
     for (const x of dataArray) {
       for (const y of x.plantGrowth) {
         const year = y.date.getFullYear();
@@ -38,7 +40,7 @@ function formatData(dataArray: DmasData[] | undefined) {
 
 function returnAllSpecies(returnData: DmasData[] | undefined) {
   const allSpecies = [];
-  if (returnData != undefined) {
+  if (Array.isArray(returnData)) {
     for (const x of returnData) {
       allSpecies.push(x.species);
     }
