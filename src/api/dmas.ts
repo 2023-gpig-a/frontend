@@ -1,7 +1,7 @@
 // given a range of cooridinates,
 // DMAS api will return all data in location range
 
-interface PlantGrowthDatum {
+export interface PlantGrowthDatum {
   date: Date;
   longitude: number;
   latitiude: number;
@@ -14,15 +14,26 @@ export interface DmasData {
 }
 
 export interface DmasAPI {
-  getDmasData(): Promise<DmasData[]>;
+  getDmasData(latLon?: [number, number], scanRange?: number, dayRange?: number): Promise<DmasData[]>;
 }
 
 export const Dmas: DmasAPI = {
-  getDmasData: async () => {
+  getDmasData: async (latLon, scanRange, dayRange) => {
+    const queryParams = new URLSearchParams();
+    if (scanRange) {
+      queryParams.append("scan_range", scanRange.toString());
+    }
+    if (dayRange) {
+      queryParams.append("day_range", dayRange.toString());
+    }
+    if (latLon) {
+      queryParams.append('center_lat', latLon[0].toString());
+      queryParams.append('center_lon', latLon[1].toString());
+    }
     const response = await fetch(
-      import.meta.env.VITE_DMAS_ENDPOINT + "/track_growth",
+      import.meta.env.VITE_DMAS_ENDPOINT + "/track_growth?" + queryParams.toString()
     );
-    return response.json();
+    return (await response.json()).plant_growth_data;
   },
 };
 

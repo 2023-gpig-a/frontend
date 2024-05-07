@@ -63,7 +63,7 @@ function stringToColour(str: string) {
 //add year to form
 export default function DataPage() {
   const returnData = useQuery({
-    queryFn: Plants.getDmasData,
+    queryFn: () => Plants.getDmasData(),
     queryKey: ["species"],
   });
 

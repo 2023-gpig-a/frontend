@@ -4,14 +4,14 @@ import { Link } from "react-router-dom";
 import {
   DroneManager,
   DroneManagerAPI,
-  DroneStatus,
   MockDroneAPI,
 } from "../../api/drones";
+import { DmasAPI, Dmas, MockDmasAPI, PlantGrowthDatum } from "../../api/dmas";
 import { useQuery } from "@tanstack/react-query";
 import L from "leaflet";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { Ref, useRef } from "react";
+import { Ref, useEffect, useReducer, useRef } from "react";
 dayjs.extend(relativeTime);
 
 const Drones: DroneManagerAPI =
@@ -19,19 +19,56 @@ const Drones: DroneManagerAPI =
     ? MockDroneAPI
     : DroneManager;
 
+const DMAS: DmasAPI =
+  import.meta.env.VITE_USE_MOCK_DMAS === "true" ? MockDmasAPI : Dmas;
+
 const droneStatusToColor: Record<"idle" | "flying" | "unknown", string> = {
   idle: "green",
   flying: "blue",
   unknown: "red",
 };
 
-function DroneMap({
-  drones,
-  mapRef,
-}: {
-  drones: DroneStatus[];
-  mapRef?: Ref<L.Map>;
-}) {
+type PlantsState = {
+  plants: Array<PlantGrowthDatum & { species: string }>;
+};
+
+function plantsReducer(
+  state: PlantsState,
+  action: PlantGrowthDatum & { species: string }
+): PlantsState {
+  const rec = state.plants.find(
+    (x) => x.latitiude === action.latitiude && x.longitude === action.longitude
+  );
+  if (!rec) {
+    return { plants: [...state.plants, action] };
+  }
+  rec.count += action.count;
+  return { plants: state.plants };
+}
+
+function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
+  const [seenPlants, addPlants] = useReducer(plantsReducer, { plants: [] });
+  const { data: drones } = useQuery({
+    queryFn: Drones.getDroneStatus,
+    queryKey: ["droneStatus"],
+    refetchInterval: 5000,
+  });
+
+  useEffect(() => {
+    if (drones) {
+      Promise.all(
+        drones.map(async (drone) => {
+          const plants = await DMAS.getDmasData(drone.lastSeen);
+          for (const datum of plants) {
+            for (const instance of datum.plantGrowth) {
+              addPlants({ ...instance, species: datum.species });
+            }
+          }
+        })
+      );
+    }
+  }, [drones]);
+
   return (
     <MapContainer
       center={[54.39, -0.937]}
@@ -43,7 +80,7 @@ function DroneMap({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {drones.map((drone) => (
+      {(drones ?? []).map((drone) => (
         <Marker
           key={drone.id}
           position={drone.lastSeen}
@@ -72,6 +109,31 @@ function DroneMap({
           </Popup>
         </Marker>
       ))}
+      {seenPlants.plants.map((plant) => (
+        <Marker
+          key={`${plant.species}-${plant.latitiude}-${plant.longitude}`}
+          position={[plant.latitiude, plant.longitude]}
+          icon={L.divIcon({
+            className: "plant-marker",
+            html: `<div style="background-color: green; width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center">${plant.count}</div>`,
+          })}
+        >
+          <Popup>
+            <table>
+              <tbody>
+                <tr>
+                  <td>Species</td>
+                  <td>{plant.species}</td>
+                </tr>
+                <tr>
+                  <td>Count</td>
+                  <td>{plant.count}</td>
+                </tr>
+              </tbody>
+            </table>
+          </Popup>
+        </Marker>
+      ))}
     </MapContainer>
   );
 }
@@ -83,6 +145,8 @@ export default function MapPage() {
     refetchInterval: 5000,
   });
   const mapRef = useRef<L.Map>(null);
+
+  console.log(droneStatuses.data);
 
   return (
     <div className="grid grid-cols-2 gap-1">
@@ -112,7 +176,7 @@ export default function MapPage() {
         )}
       </div>
       <div>
-        <DroneMap drones={droneStatuses.data || []} mapRef={mapRef} />
+        <DroneMap mapRef={mapRef} />
       </div>
       <Link to="/data">
         <button className="bg-green-500 text-white p-1 rounded">
