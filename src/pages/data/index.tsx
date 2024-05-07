@@ -21,7 +21,7 @@ const Plants: DmasAPI =
 
 function formatData(dataArray: DmasData[] | undefined) {
   const plantTotalsByYear = new Map<number, Record<string, number>>();
-  if (dataArray != undefined) {
+  if (Array.isArray(dataArray)) {
     for (const x of dataArray) {
       for (const y of x.plantGrowth) {
         const year = y.date.getFullYear();
@@ -41,7 +41,7 @@ function formatData(dataArray: DmasData[] | undefined) {
 
 function returnAllSpecies(returnData: DmasData[] | undefined) {
   const allSpecies = [];
-  if (returnData != undefined) {
+  if (Array.isArray(returnData)) {
     for (const x of returnData) {
       allSpecies.push(x.species);
     }
