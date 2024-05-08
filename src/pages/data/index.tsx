@@ -22,8 +22,8 @@ function formatData(dataArray: DmasData[] | undefined) {
   const plantTotalsByYear = new Map<number, Record<string, number>>();
   if (Array.isArray(dataArray)) {
     for (const x of dataArray) {
-      for (const y of x.plantGrowth) {
-        const year = y.date.getFullYear();
+      for (const y of x.plant_growth_datum) {
+        const year = new Date(y.date).getFullYear();
         if (!plantTotalsByYear.has(year)) {
           plantTotalsByYear.set(year, {});
         }

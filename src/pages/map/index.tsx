@@ -1,11 +1,7 @@
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { Link } from "react-router-dom";
-import {
-  DroneManager,
-  DroneManagerAPI,
-  MockDroneAPI,
-} from "../../api/drones";
+import { DroneManager, DroneManagerAPI, MockDroneAPI } from "../../api/drones";
 import { DmasAPI, Dmas, MockDmasAPI, PlantGrowthDatum } from "../../api/dmas";
 import { useQuery } from "@tanstack/react-query";
 import L from "leaflet";
@@ -37,12 +33,12 @@ function plantsReducer(
   action: PlantGrowthDatum & { species: string }
 ): PlantsState {
   const rec = state.plants.find(
-    (x) => x.latitiude === action.latitiude && x.longitude === action.longitude
+    (x) => x.latitude === action.latitude && x.longitude === action.longitude
   );
   if (!rec) {
     return { plants: [...state.plants, action] };
   }
-  rec.count += action.count;
+  rec.count = action.count;
   return { plants: state.plants };
 }
 
@@ -58,9 +54,9 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
     if (drones) {
       Promise.all(
         drones.map(async (drone) => {
-          const plants = await DMAS.getDmasData(drone.lastSeen);
+          const plants = await DMAS.getDmasData(drone.lastSeen, 150, 10);
           for (const datum of plants) {
-            for (const instance of datum.plantGrowth) {
+            for (const instance of datum.plant_growth_datum) {
               addPlants({ ...instance, species: datum.species });
             }
           }
@@ -109,31 +105,34 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
           </Popup>
         </Marker>
       ))}
-      {seenPlants.plants.map((plant) => (
-        <Marker
-          key={`${plant.species}-${plant.latitiude}-${plant.longitude}`}
-          position={[plant.latitiude, plant.longitude]}
-          icon={L.divIcon({
-            className: "plant-marker",
-            html: `<div style="background-color: green; width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center">${plant.count}</div>`,
-          })}
-        >
-          <Popup>
-            <table>
-              <tbody>
-                <tr>
-                  <td>Species</td>
-                  <td>{plant.species}</td>
-                </tr>
-                <tr>
-                  <td>Count</td>
-                  <td>{plant.count}</td>
-                </tr>
-              </tbody>
-            </table>
-          </Popup>
-        </Marker>
-      ))}
+      =
+      {seenPlants.plants.map((plant) => {
+        return (
+          <Marker
+            key={`${plant.species}-${plant.latitude}-${plant.longitude}`}
+            position={[plant.latitude, plant.longitude]}
+            icon={L.divIcon({
+              className: "plant-marker",
+              html: `<div style="background-color: green; width: 12px; height: 12px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center">${plant.count}</div>`
+            })}
+          >
+            <Popup>
+              <table>
+                <tbody>
+                  <tr>
+                    <td>Species</td>
+                    <td>{plant.species}</td>
+                  </tr>
+                  <tr>
+                    <td>Count</td>
+                    <td>{plant.count}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </Popup>
+          </Marker>
+        );
+      })}
     </MapContainer>
   );
 }
