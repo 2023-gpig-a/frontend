@@ -1,14 +1,23 @@
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import {
+  Circle,
+  MapContainer,
+  Marker,
+  Popup,
+  TileLayer,
+  useMapEvent,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { Link } from "react-router-dom";
 import { DroneManager, DroneManagerAPI, MockDroneAPI } from "../../api/drones";
 import { DmasAPI, Dmas, MockDmasAPI, PlantGrowthDatum } from "../../api/dmas";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import L from "leaflet";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { Ref, useEffect, useReducer, useRef } from "react";
+import { Ref, useEffect, useReducer, useRef, useState } from "react";
 dayjs.extend(relativeTime);
+
+const METRES_PER_DEGREE_LAT = 111_111;
 
 const Drones: DroneManagerAPI =
   import.meta.env.VITE_USE_MOCK_DRONEMANAGER === "true"
@@ -27,6 +36,23 @@ const droneStatusToColor: Record<"idle" | "flying" | "unknown", string> = {
 type PlantsState = {
   plants: Array<PlantGrowthDatum & { species: string }>;
 };
+
+function MoveableCircle(props: {
+  centre: [number, number];
+  radius: number;
+  onMove: (centre: [number, number], radius: number) => void;
+  onClick?: () => void;
+}) {
+  useMapEvent("mousemove", (e) => {
+    props.onMove([e.latlng.lat, e.latlng.lng], props.radius);
+  });
+  return <Circle center={props.centre} radius={props.radius} eventHandlers={{
+    mousedown: (e) => {
+      e.originalEvent.preventDefault();
+      props.onClick?.();
+    }
+  }} />;
+}
 
 function plantsReducer(
   state: PlantsState,
@@ -51,7 +77,7 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
   });
 
   useEffect(() => {
-    if (drones) {
+    if (Array.isArray(drones)) {
       Promise.all(
         drones.map(async (drone) => {
           const plants = await DMAS.getDmasData(drone.lastSeen, 150, 10);
@@ -65,75 +91,115 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
     }
   }, [drones]);
 
+  const [isDirecting, setDirecting] = useState(false);
+  const [directCentre, setDirectCentre] = useState<[number, number]>([
+    54.39, -0.397,
+  ]);
+  const [directRadiusMetres, setDirectRadiusMetres] = useState(150);
+  const doDirectDrone = useMutation({
+    mutationFn: (args: { lat: number, lon: number, radius: number }) => {
+      return Drones.droneDispatchCircle(args.lat, args.lon, args.radius / METRES_PER_DEGREE_LAT);
+    },
+  });
+
   return (
-    <MapContainer
-      center={[54.39, -0.937]}
-      zoom={12}
-      style={{ width: "100%", maxWidth: "100vw", minHeight: "600px" }}
-      ref={mapRef}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {(drones ?? []).map((drone) => (
-        <Marker
-          key={drone.id}
-          position={drone.lastSeen}
-          icon={L.divIcon({
-            className: "drone-marker",
-            html: `<div style="background-color: ${
-              droneStatusToColor[drone.status]
-            }; width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center">${
-              drone.id
-            }</div>`,
-          })}
-        >
-          <Popup>
-            <table>
-              <tbody>
-                <tr>
-                  <td>Status</td>
-                  <td>{drone.status}</td>
-                </tr>
-                <tr>
-                  <td>Last Seen</td>
-                  <td>{dayjs(drone.lastUpdate).fromNow()}</td>
-                </tr>
-              </tbody>
-            </table>
-          </Popup>
-        </Marker>
-      ))}
-      =
-      {seenPlants.plants.map((plant) => {
-        return (
+    <>
+      <MapContainer
+        center={[54.39, -0.937]}
+        zoom={12}
+        style={{ width: "100%", maxWidth: "100vw", minHeight: "600px" }}
+        ref={mapRef}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {isDirecting && (
+          <MoveableCircle
+            centre={directCentre}
+            radius={directRadiusMetres}
+            onMove={(centre, radius) => {
+              setDirectCentre(centre);
+              setDirectRadiusMetres(radius);
+            }}
+            onClick={() => {
+              setDirecting(false);
+              doDirectDrone.mutate({ lat: directCentre[0], lon: directCentre[1], radius: directRadiusMetres });
+            }}
+          />
+        )}
+        {doDirectDrone.isPending && (
+          <Circle center={directCentre} radius={directRadiusMetres} pathOptions={{ color: "red" }} />
+        )}
+        {(Array.isArray(drones) ? drones : []).map((drone) => (
           <Marker
-            key={`${plant.species}-${plant.latitude}-${plant.longitude}`}
-            position={[plant.latitude, plant.longitude]}
+            key={drone.id}
+            position={drone.lastSeen}
             icon={L.divIcon({
-              className: "plant-marker",
-              html: `<div style="background-color: green; width: 12px; height: 12px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center">${plant.count}</div>`
+              className: "drone-marker",
+              html: `<div style="background-color: ${
+                droneStatusToColor[drone.status]
+              }; width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center">${
+                drone.id
+              }</div>`,
             })}
           >
             <Popup>
               <table>
                 <tbody>
                   <tr>
-                    <td>Species</td>
-                    <td>{plant.species}</td>
+                    <td>Status</td>
+                    <td>{drone.status}</td>
                   </tr>
                   <tr>
-                    <td>Count</td>
-                    <td>{plant.count}</td>
+                    <td>Last Seen</td>
+                    <td>{dayjs(drone.lastUpdate).fromNow()}</td>
                   </tr>
                 </tbody>
               </table>
             </Popup>
           </Marker>
-        );
-      })}
-    </MapContainer>
+        ))}
+        =
+        {seenPlants.plants.map((plant) => {
+          return (
+            <Marker
+              key={`${plant.species}-${plant.latitude}-${plant.longitude}`}
+              position={[plant.latitude, plant.longitude]}
+              icon={L.divIcon({
+                className: "plant-marker",
+                html: `<div style="background-color: green; width: 12px; height: 12px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center">${plant.count}</div>`,
+              })}
+            >
+              <Popup>
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>Species</td>
+                      <td>{plant.species}</td>
+                    </tr>
+                    <tr>
+                      <td>Count</td>
+                      <td>{plant.count}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MapContainer>
+      <button onClick={() => setDirecting(!isDirecting)}>Direct Drones</button>
+      {isDirecting && (
+        <div>
+          <label>
+            Radius
+            <input type="range" min={50} max={1000} value={directRadiusMetres} onChange={e => setDirectRadiusMetres(parseInt(e.target.value))} />
+            {directRadiusMetres}m
+          </label>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -157,7 +223,7 @@ export default function MapPage() {
         )}
         {droneStatuses.isSuccess && (
           <ul className="space-y-1">
-            {droneStatuses.data?.map((drone) => (
+            {Array.isArray(droneStatuses.data) && droneStatuses.data.map((drone) => (
               <li key={drone.id} className="block p-2 shadow-sm">
                 <div>
                   {drone.id} - {drone.status}
