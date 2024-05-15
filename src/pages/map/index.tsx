@@ -69,7 +69,7 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
     <MapContainer
       center={[54.39, -0.937]}
       zoom={12}
-      style={{ width: "100%", maxWidth: "100vw", minHeight: "600px" }}
+      style={{ width: "100%", maxWidth: "100vw", minHeight: "600px", zIndex: 25 }}
       ref={mapRef}
     >
       <TileLayer
