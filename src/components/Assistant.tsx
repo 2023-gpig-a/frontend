@@ -89,20 +89,26 @@ export function Assistant() {
           ? "w-96 h-5/6 rounded-sm z-[40] shadow-xl"
           : "w-16 h-16 rounded-full flex items-center justify-center shadow-md"
       )}
-      onClick={() => setOpen((v) => (v ? v : true))}
     >
       {isOpen ? (
         <div className="flex flex-col h-full">
           <AssistantCore />
           <button
             className="top-2 right-2 p-2 absolute z-50"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+            }}
           >
             &times;
           </button>
         </div>
       ) : (
-        <img src={Icon} alt="" className="w-10 h-10" />
+        <img
+          src={Icon}
+          alt=""
+          className="w-10 h-10"
+          onClick={() => setOpen(true)}
+        />
       )}
     </div>
   );
