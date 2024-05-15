@@ -15,7 +15,7 @@ export interface DroneManagerAPI {
 export const DroneManager: DroneManagerAPI = {
   getDroneStatus: async () => {
     const response = await fetch(
-      import.meta.env.VITE_DRONEMANAGER_ENDPOINT + "/get_drone_status",
+      import.meta.env.VITE_DRONEMANAGER_ENDPOINT + "/drone_status",
     );
     return response.json();
   },
