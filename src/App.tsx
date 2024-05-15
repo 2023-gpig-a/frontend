@@ -5,6 +5,7 @@ import "./App.css";
 import MapPage from "./pages/map";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import DataPage from "./pages/data";
+import { Assistant } from "./components/Assistant";
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,7 @@ function App() {
       <StrictMode>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
+          <Assistant />
         </QueryClientProvider>
       </StrictMode>
     </>
