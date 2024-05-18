@@ -8,6 +8,7 @@ export interface DroneStatus {
 }
 
 export interface DroneManagerAPI {
+  droneDispatchCircle(latitude: number, longitude: number, radiusDegrees: number): Promise<void>;
   getDroneStatus(): Promise<Record<string, DroneStatus>>;
 }
 
@@ -18,6 +19,18 @@ export const DroneManager: DroneManagerAPI = {
     );
     return await response.json();
   },
+  droneDispatchCircle: async (latitude: number, longitude: number, radiusDegrees: number) => {
+    await fetch(
+      import.meta.env.VITE_DRONEMANAGER_ENDPOINT + "/drone_dispatch/circle",
+      {
+        method: "POST",
+        body: JSON.stringify({ lat: latitude, lon: longitude, radius: radiusDegrees }),
+        headers: {
+          "Content-Type": "application/json",
+        }
+      },
+    );
+  }
 };
 
 export const MockDroneAPI: DroneManagerAPI = {
@@ -64,5 +77,8 @@ export const MockDroneAPI: DroneManagerAPI = {
         lastSeen: [center[0] - 0.05, center[1] + 0.05],
       },
     };
+  },
+  droneDispatchCircle: async (lat, lng, rad) => {
+    console.log(`Dispatching drone to ${lat}, ${lng} with radius ${rad}`);
   },
 };
