@@ -11,10 +11,10 @@ import { Link } from "react-router-dom";
 import { DroneManager, DroneManagerAPI, MockDroneAPI } from "../../api/drones";
 import { DmasAPI, Dmas, MockDmasAPI, PlantGrowthDatum } from "../../api/dmas";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Ref, useEffect, useReducer, useRef, useState } from "react";
 import L from "leaflet";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { Ref, useEffect, useReducer, useRef, useState } from "react";
 dayjs.extend(relativeTime);
 
 const METRES_PER_DEGREE_LAT = 111_111;
@@ -77,9 +77,9 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
   });
 
   useEffect(() => {
-    if (Array.isArray(drones)) {
+    if (drones) {
       Promise.all(
-        drones.map(async (drone) => {
+        Object.values(drones).map(async (drone) => {
           const plants = await DMAS.getDmasData(drone.lastSeen, 150, 10);
           for (const datum of plants) {
             for (const instance of datum.plant_growth_datum) {
@@ -131,16 +131,16 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
         {doDirectDrone.isPending && (
           <Circle center={directCentre} radius={directRadiusMetres} pathOptions={{ color: "red" }} />
         )}
-        {(Array.isArray(drones) ? drones : []).map((drone) => (
+        {drones && Object.entries(drones).map(([id, drone]) => (
           <Marker
-            key={drone.id}
+            key={id}
             position={drone.lastSeen}
             icon={L.divIcon({
               className: "drone-marker",
               html: `<div style="background-color: ${
                 droneStatusToColor[drone.status]
               }; width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center">${
-                drone.id
+                id
               }</div>`,
             })}
           >
@@ -160,7 +160,7 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
             </Popup>
           </Marker>
         ))}
-        =
+
         {seenPlants.plants.map((plant) => {
           return (
             <Marker
@@ -223,10 +223,10 @@ export default function MapPage() {
         )}
         {droneStatuses.isSuccess && (
           <ul className="space-y-1">
-            {Array.isArray(droneStatuses.data) && droneStatuses.data.map((drone) => (
-              <li key={drone.id} className="block p-2 shadow-sm">
+            {droneStatuses.data && Object.entries(droneStatuses.data).map(([id, drone]) => (
+              <li key={id} className="block p-2 shadow-sm">
                 <div>
-                  {drone.id} - {drone.status}
+                  {id} - {drone.status}
                 </div>
                 <div>Last seen {dayjs(drone.lastUpdate).fromNow()}</div>
                 <button
