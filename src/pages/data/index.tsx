@@ -1,4 +1,4 @@
-import { SetStateAction, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Dmas, DmasAPI, DmasData, MockDmasAPI } from "../../api/dmas";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -12,11 +12,18 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import Geonames from "geonames.js";
+import centerOfMass from "@turf/center-of-mass";
+import { debounce } from "lodash-es";
 
-const Plants: DmasAPI = 
-    import.meta.env.VITE_USE_MOCK_DMAS === "true"
-        ? MockDmasAPI
-        : Dmas;
+const geonames = Geonames({
+  username: import.meta.env.VITE_GEONAMES_USERNAME,
+  lan: "en",
+  encoding: "JSON",
+});
+
+const Plants: DmasAPI =
+  import.meta.env.VITE_USE_MOCK_DMAS === "true" ? MockDmasAPI : Dmas;
 
 function formatData(dataArray: DmasData[] | undefined) {
   const plantTotalsByYear = new Map<number, Record<string, number>>();
@@ -33,7 +40,7 @@ function formatData(dataArray: DmasData[] | undefined) {
     }
   }
   const plantTotalsArray = Array.from(plantTotalsByYear.entries()).map(
-    ([year, totals]) => ({ year, ...totals }),
+    ([year, totals]) => ({ year, ...totals })
   );
   return plantTotalsArray;
 }
@@ -67,13 +74,43 @@ export default function DataPage() {
     queryKey: ["species"],
   });
 
-  const [myLocation, setMyLocation] = useState("York");
+  const [myLocation, setMyLocation] = useState("");
 
-  const handleChange = (event: {
-    target: { value: SetStateAction<string> };
-  }) => {
-    setMyLocation(event.target.value);
-  };
+  const updateLocation = useCallback(
+    debounce(async (latlng: [number, number]) => {
+      const res = await geonames.findNearby({
+        lat: latlng[1],
+        lng: latlng[0],
+        radius: 4,
+      });
+      const placeName = res.geonames?.[0]?.toponymName;
+      setMyLocation(placeName ?? "Unknown");
+    }, 250),
+    []
+  );
+
+  useEffect(() => {
+    if (!Array.isArray(returnData.data)) {
+      return;
+    }
+    const fc = {
+      type: "FeatureCollection",
+      features: returnData.data.flatMap((species) =>
+        species.plant_growth_datum.map((datum) => ({
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: [datum.longitude, datum.latitude],
+          },
+        }))
+      ).filter(x => x.geometry.coordinates[0] && x.geometry.coordinates[1]),
+    };
+    if (fc.features.length === 0) {
+      return;
+    }
+    const centre = centerOfMass(fc);
+    updateLocation(centre.geometry.coordinates as [number, number]);
+  }, [returnData.data, updateLocation]);
 
   const chartData = formatData(returnData.data);
   const allSpecies = returnAllSpecies(returnData.data);
@@ -81,13 +118,7 @@ export default function DataPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold">View Data</h1>
-      <form>
-        <select value={myLocation} onChange={handleChange}>
-          <option value="York">York</option>
-          <option value="Leeds">Leeds</option>
-          <option value="London">London</option>
-        </select>
-      </form>
+      <h2>Location: {myLocation}</h2>
       <div>
         <h2 className="grid grid-cols-2 gap-1">Plant Status Over Time</h2>
         <ResponsiveContainer width={"50%"} height={500}>
