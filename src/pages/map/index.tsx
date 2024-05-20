@@ -7,6 +7,10 @@ import {
   useMapEvent,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import "leaflet.markercluster";
+import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import { Link } from "react-router-dom";
 import { DroneManager, DroneManagerAPI, MockDroneAPI } from "../../api/drones";
 import { DmasAPI, Dmas, MockDmasAPI, PlantGrowthDatum } from "../../api/dmas";
@@ -14,6 +18,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Ref, useEffect, useReducer, useRef, useState } from "react";
 import L from "leaflet";
 import dayjs from "dayjs";
+
+import IconDrone from "../../assets/noun-drone-6835491.svg";
+import IconWeed from "../../assets/noun-leaf-1747497.svg";
+import IconRose from "../../assets/noun-rose-2554501.svg";
+import IconPlant from "../../assets/noun-plant-387024.svg";
+
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
@@ -27,10 +37,9 @@ const Drones: DroneManagerAPI =
 const DMAS: DmasAPI =
   import.meta.env.VITE_USE_MOCK_DMAS === "true" ? MockDmasAPI : Dmas;
 
-const droneStatusToColor: Record<"idle" | "flying" | "unknown", string> = {
-  idle: "green",
-  flying: "blue",
-  unknown: "red",
+const plantSpeciestoIcon: Record<string, string> = {
+  knotweed: IconWeed,
+  rose: IconRose,
 };
 
 type PlantsState = {
@@ -46,12 +55,18 @@ function MoveableCircle(props: {
   useMapEvent("mousemove", (e) => {
     props.onMove([e.latlng.lat, e.latlng.lng], props.radius);
   });
-  return <Circle center={props.centre} radius={props.radius} eventHandlers={{
-    mousedown: (e) => {
-      e.originalEvent.preventDefault();
-      props.onClick?.();
-    }
-  }} />;
+  return (
+    <Circle
+      center={props.centre}
+      radius={props.radius}
+      eventHandlers={{
+        mousedown: (e) => {
+          e.originalEvent.preventDefault();
+          props.onClick?.();
+        },
+      }}
+    />
+  );
 }
 
 function plantsReducer(
@@ -97,8 +112,12 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
   ]);
   const [directRadiusMetres, setDirectRadiusMetres] = useState(150);
   const doDirectDrone = useMutation({
-    mutationFn: (args: { lat: number, lon: number, radius: number }) => {
-      return Drones.droneDispatchCircle(args.lat, args.lon, args.radius / METRES_PER_DEGREE_LAT);
+    mutationFn: (args: { lat: number; lon: number; radius: number }) => {
+      return Drones.droneDispatchCircle(
+        args.lat,
+        args.lon,
+        args.radius / METRES_PER_DEGREE_LAT
+      );
     },
   });
 
@@ -124,77 +143,92 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
             }}
             onClick={() => {
               setDirecting(false);
-              doDirectDrone.mutate({ lat: directCentre[0], lon: directCentre[1], radius: directRadiusMetres });
+              doDirectDrone.mutate({
+                lat: directCentre[0],
+                lon: directCentre[1],
+                radius: directRadiusMetres,
+              });
             }}
           />
         )}
         {doDirectDrone.isPending && (
-          <Circle center={directCentre} radius={directRadiusMetres} pathOptions={{ color: "red" }} />
+          <Circle
+            center={directCentre}
+            radius={directRadiusMetres}
+            pathOptions={{ color: "red" }}
+          />
         )}
-        {drones && Object.entries(drones).map(([id, drone]) => (
-          <Marker
-            key={id}
-            position={drone.lastSeen}
-            icon={L.divIcon({
-              className: "drone-marker",
-              html: `<div style="background-color: ${
-                droneStatusToColor[drone.status]
-              }; width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center">${
-                id
-              }</div>`,
-            })}
-          >
-            <Popup>
-              <table>
-                <tbody>
-                  <tr>
-                    <td>Status</td>
-                    <td>{drone.status}</td>
-                  </tr>
-                  <tr>
-                    <td>Last Seen</td>
-                    <td>{dayjs(drone.lastUpdate).fromNow()}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </Popup>
-          </Marker>
-        ))}
-
-        {seenPlants.plants.map((plant) => {
-          return (
+        {drones &&
+          Object.entries(drones).map(([id, drone]) => (
             <Marker
-              key={`${plant.species}-${plant.latitude}-${plant.longitude}`}
-              position={[plant.latitude, plant.longitude]}
-              icon={L.divIcon({
-                className: "plant-marker",
-                html: `<div style="background-color: green; width: 12px; height: 12px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center">${plant.count}</div>`,
+              key={id}
+              position={drone.lastSeen}
+              icon={L.icon({
+                iconUrl: IconDrone,
+                iconSize: [64, 64],
+                iconAnchor: [32, 32],
               })}
             >
               <Popup>
                 <table>
                   <tbody>
                     <tr>
-                      <td>Species</td>
-                      <td>{plant.species}</td>
+                      <td>Status</td>
+                      <td>{drone.status}</td>
                     </tr>
                     <tr>
-                      <td>Count</td>
-                      <td>{plant.count}</td>
+                      <td>Last Seen</td>
+                      <td>{dayjs(drone.lastUpdate).fromNow()}</td>
                     </tr>
                   </tbody>
                 </table>
               </Popup>
             </Marker>
-          );
-        })}
+          ))}
+
+        <MarkerClusterGroup >
+          {seenPlants.plants.map((plant) => {
+            return (
+              <Marker
+                key={`${plant.species}-${plant.latitude}-${plant.longitude}`}
+                position={[plant.latitude, plant.longitude]}
+                icon={L.icon({
+                  iconUrl: plantSpeciestoIcon[plant.species] ?? IconPlant,
+                  iconSize: [32, 32],
+                  iconAnchor: [16, 32],
+                })}
+              >
+                <Popup>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <td>Species</td>
+                        <td>{plant.species}</td>
+                      </tr>
+                      <tr>
+                        <td>Count</td>
+                        <td>{plant.count}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MarkerClusterGroup>
       </MapContainer>
       <button onClick={() => setDirecting(!isDirecting)}>Direct Drones</button>
       {isDirecting && (
         <div>
           <label>
             Radius
-            <input type="range" min={50} max={1000} value={directRadiusMetres} onChange={e => setDirectRadiusMetres(parseInt(e.target.value))} />
+            <input
+              type="range"
+              min={50}
+              max={1000}
+              value={directRadiusMetres}
+              onChange={(e) => setDirectRadiusMetres(parseInt(e.target.value))}
+            />
             {directRadiusMetres}m
           </label>
         </div>
@@ -223,20 +257,21 @@ export default function MapPage() {
         )}
         {droneStatuses.isSuccess && (
           <ul className="space-y-1">
-            {droneStatuses.data && Object.entries(droneStatuses.data).map(([id, drone]) => (
-              <li key={id} className="block p-2 shadow-sm">
-                <div>
-                  {id} - {drone.status}
-                </div>
-                <div>Last seen {dayjs(drone.lastUpdate).fromNow()}</div>
-                <button
-                  className="bg-blue-500 text-white p-1 rounded inline-block"
-                  onClick={() => mapRef.current?.panTo(drone.lastSeen)}
-                >
-                  Highlight
-                </button>
-              </li>
-            ))}
+            {droneStatuses.data &&
+              Object.entries(droneStatuses.data).map(([id, drone]) => (
+                <li key={id} className="block p-2 shadow-sm">
+                  <div>
+                    {id} - {drone.status}
+                  </div>
+                  <div>Last seen {dayjs(drone.lastUpdate).fromNow()}</div>
+                  <button
+                    className="bg-blue-500 text-white p-1 rounded inline-block"
+                    onClick={() => mapRef.current?.panTo(drone.lastSeen)}
+                  >
+                    Highlight
+                  </button>
+                </li>
+              ))}
           </ul>
         )}
       </div>

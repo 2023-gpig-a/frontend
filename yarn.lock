@@ -302,6 +302,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@changey/react-leaflet-markercluster@npm:^4.0.0-rc1":
+  version: 4.0.0-rc1
+  resolution: "@changey/react-leaflet-markercluster@npm:4.0.0-rc1"
+  dependencies:
+    "@react-leaflet/core": "npm:^2.0.0"
+    leaflet: "npm:^1.8.0"
+    leaflet.markercluster: "npm:^1.5.3"
+    react-leaflet: "npm:^4.0.0"
+  peerDependencies:
+    leaflet: ^1.8.0
+    leaflet.markercluster: ^1.5.3
+    react-leaflet: ^4.0.0
+  checksum: 9c197134f98fce13fe7f0c37361ed7eea5e29103507fa1db8ed446219f8161e08e22d3f0fc2b1766aec95cf28c250e7fd59fedebdd45cfbc7d0521d3e349d31c
+  languageName: node
+  linkType: hard
+
 "@esbuild/aix-ppc64@npm:0.20.2":
   version: 0.20.2
   resolution: "@esbuild/aix-ppc64@npm:0.20.2"
@@ -642,7 +658,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-leaflet/core@npm:^2.1.0":
+"@react-leaflet/core@npm:^2.0.0, @react-leaflet/core@npm:^2.1.0":
   version: 2.1.0
   resolution: "@react-leaflet/core@npm:2.1.0"
   peerDependencies:
@@ -2484,7 +2500,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/leaflet@npm:^1.9.8":
+"@types/leaflet.markercluster@npm:^1.5.4":
+  version: 1.5.4
+  resolution: "@types/leaflet.markercluster@npm:1.5.4"
+  dependencies:
+    "@types/leaflet": "npm:*"
+  checksum: fc87a06d156f6deb1c10a55998a31adde62aae914af325af97a844cb970a081131b2e8fbe7ae4b2d83b7e90771eb567fb76d820c04d51b3baef65d21b08fd324
+  languageName: node
+  linkType: hard
+
+"@types/leaflet@npm:*, @types/leaflet@npm:^1.9.8":
   version: 1.9.12
   resolution: "@types/leaflet@npm:1.9.12"
   dependencies:
@@ -3843,10 +3868,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "frontend@workspace:."
   dependencies:
+    "@changey/react-leaflet-markercluster": "npm:^4.0.0-rc1"
     "@tanstack/eslint-plugin-query": "npm:^5.20.1"
     "@tanstack/react-query": "npm:^5.25.0"
     "@turf/turf": "npm:7.0.0-alpha.116"
     "@types/leaflet": "npm:^1.9.8"
+    "@types/leaflet.markercluster": "npm:^1.5.4"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/react": "npm:^18.2.37"
     "@types/react-dom": "npm:^18.2.15"
@@ -3860,6 +3887,7 @@ __metadata:
     eslint-plugin-react-refresh: "npm:^0.4.4"
     geonames.js: "npm:^3.0.6"
     leaflet: "npm:^1.9.4"
+    leaflet.markercluster: "npm:^1.5.3"
     lodash-es: "npm:^4.17.21"
     postcss: "npm:^8.4.35"
     react: "npm:^18.2.0"
@@ -4563,7 +4591,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"leaflet@npm:^1.9.4":
+"leaflet.markercluster@npm:^1.5.3":
+  version: 1.5.3
+  resolution: "leaflet.markercluster@npm:1.5.3"
+  peerDependencies:
+    leaflet: ^1.3.1
+  checksum: ce2d4065da00c727f5b05fe4568e5239ebd2556e45d859307ff9c44a6f7ecb9658cd91d055f5723d93f3e491c48949cf78109f50533b0b36b9a226e4d339213f
+  languageName: node
+  linkType: hard
+
+"leaflet@npm:^1.8.0, leaflet@npm:^1.9.4":
   version: 1.9.4
   resolution: "leaflet@npm:1.9.4"
   checksum: f639441dbb7eb9ae3fcd29ffd7d3508f6c6106892441634b0232fafb9ffb1588b05a8244ec7085de2c98b5ed703894df246898477836cfd0ce5b96d4717b5ca1
@@ -5326,7 +5363,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-leaflet@npm:^4.2.1":
+"react-leaflet@npm:^4.0.0, react-leaflet@npm:^4.2.1":
   version: 4.2.1
   resolution: "react-leaflet@npm:4.2.1"
   dependencies:
