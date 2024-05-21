@@ -18,6 +18,7 @@
     "@types/lodash-es": "^4.17.12",
     "dayjs": "^1.11.10",
     "geonames.js": "^3.0.6",
+    "jotai": "^2.8.0",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
     "lodash-es": "^4.17.21",

@@ -86,7 +86,7 @@ export function Assistant() {
       className={twMerge(
         "fixed bottom-8 right-8 bg-green-700 transition-all duration-700 ease-in-out",
         isOpen
-          ? "w-96 h-5/6 rounded-sm z-[40] shadow-xl"
+          ? "w-96 h-5/6 rounded-lg z-[9999] shadow-xl"
           : "w-16 h-16 rounded-full flex items-center justify-center shadow-md"
       )}
     >
