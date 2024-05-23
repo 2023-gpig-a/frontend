@@ -2,6 +2,7 @@ import {
   Circle,
   MapContainer,
   Marker,
+  Polygon,
   Popup,
   TileLayer,
   useMapEvent,
@@ -56,12 +57,12 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
   const { data: drones } = useQuery({
     queryFn: Drones.getDroneStatus,
     queryKey: ["droneStatus"],
-    refetchInterval: 5000,
+    refetchInterval: 1000,
   });
 
   const [isDirecting, setDirecting] = useState(false);
   const [directCentre, setDirectCentre] = useState<[number, number]>([
-    54.39, -0.397,
+    54.29285, -0.397,
   ]);
   const [directRadiusMetres, setDirectRadiusMetres] = useState(150);
   const doDirectDrone = useMutation({
@@ -74,11 +75,14 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
     },
   });
 
+  const centreY = 54.29285;
+  const centreX = -0.5585194;
+
   return (
     <>
       <MapContainer
-        center={[54.39, -0.937]}
-        zoom={12}
+        center={[centreY, centreX]}
+        zoom={15}
         style={{ width: "100%", maxWidth: "100vw", minHeight: "600px" }}
         ref={mapRef}
       >
@@ -96,6 +100,7 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
             }}
             onClick={() => {
               setDirecting(false);
+              console.log(directCentre);
               doDirectDrone.mutate({
                 lat: directCentre[0],
                 lon: directCentre[1],
@@ -138,6 +143,24 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
               </Popup>
             </Marker>
           ))}
+        <Polygon
+          positions={[
+            [
+              [90, -180],
+              [90, 180],
+              [-90, 180],
+              [-90, -180],
+            ],
+            [
+              [centreY - 0.00459797, centreX - 0.00429797],
+              [centreY - 0.00459797, centreX + 0.00459797],
+              [centreY + 0.00459797, centreX + 0.00459797],
+              [centreY + 0.00459797, centreX - 0.00429797],
+            ],
+          ]}
+          fill
+          fillColor="red"
+        />
       </MapContainer>
       <button
         onClick={() => setDirecting(!isDirecting)}
@@ -151,8 +174,8 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
             Radius
             <input
               type="range"
-              min={50}
-              max={1000}
+              min={25}
+              max={275}
               value={directRadiusMetres}
               onChange={(e) => setDirectRadiusMetres(parseInt(e.target.value))}
             />

@@ -14,21 +14,14 @@ export interface DmasData {
 }
 
 export interface DmasAPI {
-  getDmasData(latLon?: [number, number], scanRange?: number, dayRange?: number): Promise<DmasData[]>;
+  getDmasData(dayRange?: number): Promise<DmasData[]>;
 }
 
 export const Dmas: DmasAPI = {
-  getDmasData: async (latLon, scanRange, dayRange) => {
+  getDmasData: async (dayRange) => {
     const queryParams = new URLSearchParams();
-    if (scanRange) {
-      queryParams.append("scan_range", scanRange.toString());
-    }
     if (dayRange) {
       queryParams.append("day_range", dayRange.toString());
-    }
-    if (latLon) {
-      queryParams.append('center_lat', latLon[0].toString());
-      queryParams.append('center_lon', latLon[1].toString());
     }
     const response = await fetch(
       import.meta.env.VITE_DMAS_ENDPOINT + "/track_growth?" + queryParams.toString()

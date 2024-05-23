@@ -35,7 +35,7 @@ export const DroneManager: DroneManagerAPI = {
 
 export const MockDroneAPI: DroneManagerAPI = {
   getDroneStatus: async () => {
-    const center = [54.39, -0.937];
+    const center = [54.29285, -0.5585194];
     return {
       "1": {
         status: "idle",

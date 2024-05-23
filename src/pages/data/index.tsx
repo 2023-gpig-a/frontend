@@ -18,11 +18,14 @@ import Geonames from "geonames.js";
 import centerOfMass from "@turf/center-of-mass";
 import MarkerClusterGroup from "@changey/react-leaflet-markercluster";
 import { debounce } from "lodash-es";
-import { atom, useAtomValue, useSetAtom } from "jotai";
-import { MapContainer, Marker, TileLayer, Popup } from "react-leaflet";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { MapContainer, Marker, TileLayer, Popup, Polygon } from "react-leaflet";
 
+import IconDrone from "../../assets/noun-drone-6835491.svg";
 import IconPlant from "../../assets/noun-plant-387024.svg";
 import L from "leaflet";
+import dayjs from "dayjs";
+import { DroneManagerAPI, MockDroneAPI, DroneManager } from "../../api/drones";
 
 const geonames = Geonames({
   username: import.meta.env.VITE_GEONAMES_USERNAME,
@@ -33,29 +36,8 @@ const geonames = Geonames({
 const Plants: DmasAPI =
   import.meta.env.VITE_USE_MOCK_DMAS === "true" ? MockDmasAPI : Dmas;
 
+const historicalAtom = atom(false);
 const mapSpeciesFilter = atom<string | null>(null);
-
-function formatData(dataArray: DmasData[] | undefined) {
-  const plantTotalsByYear = new Map<number, Record<string, number>>();
-  if (Array.isArray(dataArray)) {
-    for (const x of dataArray) {
-      for (const y of x.plant_growth_datum) {
-        const year = new Date(y.date).getFullYear();
-        if (!plantTotalsByYear.has(year)) {
-          plantTotalsByYear.set(year, {});
-        }
-        if (typeof plantTotalsByYear.get(year)![x.species] !== "number") {
-          plantTotalsByYear.get(year)![x.species] = 0;
-        }
-        plantTotalsByYear.get(year)![x.species] += y.count;
-      }
-    }
-  }
-  const plantTotalsArray = Array.from(plantTotalsByYear.entries()).map(
-    ([year, totals]) => ({ year, ...totals })
-  );
-  return plantTotalsArray;
-}
 
 function returnAllSpecies(returnData: DmasData[] | undefined) {
   const allSpecies = [];
@@ -85,10 +67,13 @@ function isSpeciesInvasive(species: string) {
 }
 
 function DetectedPlantsTile() {
+  const historical = useAtomValue(historicalAtom);
   const { data, isLoading } = useQuery({
-    queryFn: () => Plants.getDmasData(),
-    queryKey: ["plants"],
+    queryFn: () => Plants.getDmasData(historical ? 1000 : 1),
+    queryKey: ["plants", historical],
+    refetchInterval: 1000,
   });
+
   const setFilter = useSetAtom(mapSpeciesFilter);
 
   if (isLoading) {
@@ -135,19 +120,43 @@ function DetectedPlantsTile() {
   );
 }
 
+function groupDataByDay(data: DmasData[]) {
+  const grouped: Record<string, Record<string, number>> = {};
+  for (const species of data) {
+    for (const datum of species.plant_growth_datum) {
+      const date = new Date(datum.date).toISOString().slice(0, 7);
+      if (!grouped[date]) {
+        grouped[date] = {};
+      }
+      if (typeof grouped[date][species.species] !== "number") {
+        grouped[date][species.species] = 0;
+      }
+      grouped[date][species.species] += datum.count;
+    }
+  }
+  return grouped;
+}
+
 function StatusOverTimeTile() {
+  const historical = useAtomValue(historicalAtom);
   const returnData = useQuery({
-    queryFn: () => Plants.getDmasData(),
-    queryKey: ["plants"],
+    queryFn: () => Plants.getDmasData(historical ? 1000 : 1),
+    queryKey: ["plants", historical],
+    refetchInterval: 1000,
   });
-  const chartData = formatData(returnData.data);
   const allSpecies = returnAllSpecies(returnData.data);
   return (
     <div className="border p-2">
       <h2 className="text-3xl font-bold mb-2">Plant Status Over Time</h2>
       <ResponsiveContainer width={"100%"} height={500} className="bg-white">
         <LineChart
-          data={chartData}
+          data={
+            returnData.data
+              ? Object.entries(groupDataByDay(returnData.data)).map(
+                  ([year, data]) => ({ year, ...data })
+                )
+              : []
+          }
           margin={{
             top: 20,
             right: 30,
@@ -171,7 +180,12 @@ function StatusOverTimeTile() {
           <Legend />
 
           {allSpecies.map((x) => (
-            <Line type="monotone" dataKey={x} stroke={stringToColour(x)} />
+            <Line
+              type="monotone"
+              dataKey={x}
+              stroke={stringToColour(x)}
+              strokeWidth={3}
+            />
           ))}
         </LineChart>
       </ResponsiveContainer>
@@ -179,27 +193,40 @@ function StatusOverTimeTile() {
   );
 }
 
-function TotalsChartTile() {
-  const returnData = useQuery({
-    queryFn: () => Plants.getDmasData(),
-    queryKey: ["plants"],
-  });
-
-  const speciesTotals: Record<string, number> = {};
-  if (Array.isArray(returnData.data)) {
-    for (const species of returnData.data) {
-      speciesTotals[species.species] = species.plant_growth_datum.reduce(
-        (acc, item) => acc + item.count,
-        0
-      );
+function findUniquePlants(data: DmasData[]) {
+  const result: Record<string, number> = {};
+  const seenLatLongs = new Set<string>();
+  for (const species of data) {
+    for (const datum of species.plant_growth_datum) {
+      const key = `${datum.latitude},${datum.longitude}`;
+      if (seenLatLongs.has(key)) {
+        continue;
+      }
+      seenLatLongs.add(key);
+      if (!result[species.species]) {
+        result[species.species] = 0;
+      }
+      result[species.species] += datum.count;
     }
   }
+  return result;
+}
+
+function TotalsChartTile() {
+  const historical = useAtomValue(historicalAtom);
+  const returnData = useQuery({
+    queryFn: () => Plants.getDmasData(historical ? 1000 : 1),
+    queryKey: ["plants", historical],
+    refetchInterval: 1000,
+  });
+
+  const totals = returnData.data ? findUniquePlants(returnData.data) : null;
 
   return (
     <div className="border p-2">
       <h2 className="text-3xl font-bold mb-2">Total Plants Found</h2>
       <ResponsiveContainer width={"100%"} height={500} className="bg-white">
-        <BarChart data={[speciesTotals]}>
+        <BarChart data={returnData.data ? [totals] : []}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="year">
             <Label value="Time" offset={-5} position="insideBottom" />
@@ -214,29 +241,46 @@ function TotalsChartTile() {
           ></YAxis>
           <Tooltip />
           <Legend />
-          {Object.keys(speciesTotals).map((species) => (
-            <Bar dataKey={species} fill={stringToColour(species)} />
-          ))}
+          {totals &&
+            Object.keys(totals).map((species) => (
+              <Bar dataKey={species} fill={stringToColour(species)} />
+            ))}
         </BarChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
+const Drones: DroneManagerAPI =
+  import.meta.env.VITE_USE_MOCK_DRONEMANAGER === "true"
+    ? MockDroneAPI
+    : DroneManager;
+
 function MapTile() {
+  const historical = useAtomValue(historicalAtom);
   const { data } = useQuery({
-    queryFn: () => Plants.getDmasData(),
-    queryKey: ["plants"],
+    queryFn: () => Plants.getDmasData(historical ? 1000 : 1),
+    queryKey: ["plants", historical],
+    refetchInterval: 1000,
   });
   const filter = useAtomValue(mapSpeciesFilter);
 
   const filtered = data?.filter((x) => x.species === filter);
 
+  const { data: drones } = useQuery({
+    queryFn: Drones.getDroneStatus,
+    queryKey: ["droneStatus"],
+    refetchInterval: 1000,
+  });
+
+  const centreY = 54.29285;
+  const centreX = -0.5585194;
+
   return (
     <div>
       <h3 className="text-xl font-bold">Viewing {filter ?? "nothing"}</h3>
       <MapContainer
-        center={[54.39, -0.937]}
+        center={[54.29285, -0.5585194]}
         zoom={12}
         style={{ width: "100%", maxWidth: "100vw", minHeight: "300px" }}
       >
@@ -245,9 +289,38 @@ function MapTile() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        {(!historical &&
+          drones) &&
+          Object.entries(drones).map(([id, drone]) => (
+            <Marker
+              key={id}
+              position={drone.lastSeen}
+              icon={L.icon({
+                iconUrl: IconDrone,
+                iconSize: [64, 64],
+                iconAnchor: [32, 32],
+              })}
+            >
+              <Popup>
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>Status</td>
+                      <td>{drone.status}</td>
+                    </tr>
+                    <tr>
+                      <td>Last Seen</td>
+                      <td>{dayjs(drone.lastUpdate).fromNow()}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </Popup>
+            </Marker>
+          ))}
+
         <MarkerClusterGroup>
           {filtered?.flatMap((species) => {
-            return species.plant_growth_datum.map((plant) => (
+            return species.plant_growth_datum.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 1000).map((plant) => (
               <Marker
                 key={`${species}-${plant.latitude}-${plant.longitude}`}
                 position={[plant.latitude, plant.longitude]}
@@ -275,15 +348,35 @@ function MapTile() {
             ));
           })}
         </MarkerClusterGroup>
+        <Polygon
+          positions={[
+            [
+              [90, -180],
+              [90, 180],
+              [-90, 180],
+              [-90, -180],
+            ],
+            [
+              [centreY - 0.00459797, centreX - 0.00429797],
+              [centreY - 0.00459797, centreX + 0.00459797],
+              [centreY + 0.00459797, centreX + 0.00459797],
+              [centreY + 0.00459797, centreX - 0.00429797],
+            ],
+          ]}
+          fill
+          fillColor="red"
+        />
       </MapContainer>
     </div>
   );
 }
 
 export default function DataPage() {
+  const [historical, setHistorical] = useAtom(historicalAtom);
   const returnData = useQuery({
-    queryFn: () => Plants.getDmasData(),
-    queryKey: ["plants"],
+    queryFn: () => Plants.getDmasData(historical ? 1000 : 1),
+    queryKey: ["plants", historical],
+    refetchInterval: 1000,
   });
 
   const [myLocation, setMyLocation] = useState("");
@@ -327,6 +420,14 @@ export default function DataPage() {
     <div>
       <h1 className="text-2xl font-bold">View Data</h1>
       <h2>Location: {myLocation}</h2>
+      <label>
+        <input
+          type="checkbox"
+          checked={historical}
+          onChange={(e) => setHistorical(e.target.checked)}
+        />
+        Show historical data
+      </label>
       <div className="grid grid-cols-2 gap-8 max-w-6xl mx-auto">
         <DetectedPlantsTile />
         <MapTile />
