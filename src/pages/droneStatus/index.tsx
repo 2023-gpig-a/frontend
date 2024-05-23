@@ -83,7 +83,7 @@ function DroneMap({ mapRef }: { mapRef?: Ref<L.Map> }) {
       <MapContainer
         center={[centreY, centreX]}
         zoom={15}
-        style={{ width: "100%", maxWidth: "100vw", minHeight: "600px" }}
+        style={{ width: "100%", maxWidth: "100vw", minHeight: "600px", height: "100%" }}
         ref={mapRef}
       >
         <TileLayer
@@ -225,9 +225,9 @@ export default function MapPage() {
           </ul>
         )}
       </div>
-      <div>
+      {/*<div>*/}
         <DroneMap mapRef={mapRef} />
-      </div>
+      {/*</div>*/}
       <Link to="/data">
         <button className="bg-white text-green py-2 px-4 rounded font-bold">
           View Data

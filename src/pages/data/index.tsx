@@ -88,32 +88,38 @@ function DetectedPlantsTile() {
     <div>
       <h2 className="text-3xl font-bold mb-2">Species</h2>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-rows-2 gap-4 species-div">
         {data?.map((species) => (
-          <div
-            key={species.species}
-            className="border p-2 inline-block space-y-1"
-          >
-            <h3 className="text-3xl font-bold">{species.species}</h3>
-            {isSpeciesInvasive(species.species) && (
-              <p className="bg-red-700 text-white px-4 py-2 my-2 rounded inline-block">
-                Invasive
-              </p>
-            )}
-            <p>
-              Count:{" "}
-              {species.plant_growth_datum.reduce(
-                (acc, item) => acc + item.count,
-                0
-              )}
-            </p>
-            <button
-              className="bg-white text-green px-4 py-2 rounded"
-              onClick={() => setFilter(species.species)}
+
+            <div
+                key={species.species}
+                className="border p-2 inline-block space-y-1"
             >
-              Show on map
-            </button>
-          </div>
+              <div className="title">
+                <h4 className="text-3xl">{species.species}</h4>
+                {isSpeciesInvasive(species.species) && (
+                    <p className="bg-red-700 text-white px-4 py-2 my-2 rounded inline-block invasive">
+                      Invasive
+                    </p>
+                )}
+              </div>
+              <div className="details">
+                <p>
+                  Count:{" "}
+                  {species.plant_growth_datum.reduce(
+                      (acc, item) => acc + item.count,
+                      0
+                  )}
+                </p>
+                <button
+                    className="bg-white text-green px-4 py-2 rounded shadow"
+                    onClick={() => setFilter(species.species)}
+                >
+                  Show on map
+                </button>
+              </div>
+
+            </div>
         ))}
       </div>
     </div>
