@@ -145,18 +145,15 @@ function StatusOverTimeTile() {
     refetchInterval: 1000,
   });
   const allSpecies = returnAllSpecies(returnData.data);
+  const processed = returnData.data
+    ? Object.entries(groupDataByDay(returnData.data))
+    : [];
   return (
     <div className="border p-2">
       <h2 className="text-3xl font-bold mb-2">Plant Status Over Time</h2>
       <ResponsiveContainer width={"100%"} height={500} className="bg-white">
         <LineChart
-          data={
-            returnData.data
-              ? Object.entries(groupDataByDay(returnData.data)).map(
-                  ([year, data]) => ({ year, ...data })
-                )
-              : []
-          }
+          data={(historical ? processed.slice(0, processed.length - 2) : processed).map(([year, data]) => ({ year, ...data }))}
           margin={{
             top: 20,
             right: 30,
@@ -281,7 +278,7 @@ function MapTile() {
       <h3 className="text-xl font-bold">Viewing {filter ?? "nothing"}</h3>
       <MapContainer
         center={[54.29285, -0.5585194]}
-        zoom={12}
+        zoom={15}
         style={{ width: "100%", maxWidth: "100vw", minHeight: "300px" }}
       >
         <TileLayer
@@ -289,8 +286,8 @@ function MapTile() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {(!historical &&
-          drones) &&
+        {!historical &&
+          drones &&
           Object.entries(drones).map(([id, drone]) => (
             <Marker
               key={id}
@@ -320,32 +317,35 @@ function MapTile() {
 
         <MarkerClusterGroup>
           {filtered?.flatMap((species) => {
-            return species.plant_growth_datum.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 1000).map((plant) => (
-              <Marker
-                key={`${species}-${plant.latitude}-${plant.longitude}`}
-                position={[plant.latitude, plant.longitude]}
-                icon={L.icon({
-                  iconUrl: IconPlant,
-                  iconSize: [32, 32],
-                  iconAnchor: [16, 32],
-                })}
-              >
-                <Popup>
-                  <table>
-                    <tbody>
-                      <tr>
-                        <td>Species</td>
-                        <td>{species.species}</td>
-                      </tr>
-                      <tr>
-                        <td>Count</td>
-                        <td>{plant.count}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </Popup>
-              </Marker>
-            ));
+            return species.plant_growth_datum
+              .sort((a, b) => b.date.localeCompare(a.date))
+              .slice(0, 1000)
+              .map((plant) => (
+                <Marker
+                  key={`${species}-${plant.latitude}-${plant.longitude}`}
+                  position={[plant.latitude, plant.longitude]}
+                  icon={L.icon({
+                    iconUrl: IconPlant,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32],
+                  })}
+                >
+                  <Popup>
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td>Species</td>
+                          <td>{species.species}</td>
+                        </tr>
+                        <tr>
+                          <td>Count</td>
+                          <td>{plant.count}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </Popup>
+                </Marker>
+              ));
           })}
         </MarkerClusterGroup>
         <Polygon

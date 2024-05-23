@@ -16,19 +16,26 @@ function linesReducer(state: Line[], line: Line) {
 }
 
 function AssistantCore() {
-  const query = useMutation({
-    mutationFn: (question: string) => api.query(question),
-  });
   const [lines, addLine] = useReducer(linesReducer, [
     {
       text: "Hello! I'm your assistant. How can I help you with your forest management problems today?",
       speaker: "system",
     },
   ]);
+  const query = useMutation({
+    mutationFn: (question: string) => api.query(question),
+    onError(error) {
+      console.error(error);
+      addLine({
+        text: "Sorry, an error occurred. Please try again later.",
+        speaker: "system",
+      });
+    },
+  });
 
   return (
     <div className="flex flex-col h-full m-8 relative">
-      <div className="flex-1 overflow-y-auto space-y-2">
+      <div className="flex-1 overflow-y-scroll max-h-[85%] space-y-2">
         {lines.map((line, i) => (
           <div
             key={i}
@@ -48,7 +55,7 @@ function AssistantCore() {
           <div className="text-white text-center">Thinking...</div>
         )}
       </div>
-      <div className="flex">
+      <div className="flex mt-2">
         <input
           type="text"
           className="flex-1 p-2 rounded-sm"
